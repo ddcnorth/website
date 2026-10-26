@@ -28,18 +28,18 @@ function updateLanguageLinks(){
 updateLanguageLinks();
 const pagePath = url => url.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
 const searchEntries = isFrench ? [
-  {title:'Planification et orientation',description:'Cadrage de projet, feuilles de route et aide à la décision.',href:siteUrl('#service-planning'),terms:'planification orientation stratégie projet feuille route décision'},
-  {title:'Données et analyse',description:'Organisation, analyse et visualisation des données.',href:siteUrl('#service-data'),terms:'données analyse recherche visualisation information organiser'},
-  {title:'Outils et systèmes numériques',description:'Sites web, conception de processus et outils sur mesure.',href:siteUrl('#service-digital'),terms:'numérique outils systèmes site web processus conception automatisation'},
-  {title:'Notre approche',description:'Comprendre, concevoir et livrer.',href:siteUrl('#approach'),terms:'approche processus comprendre concevoir livrer travail'},
-  {title:'À propos',description:'Une petite équipe, une direction commune.',href:siteUrl('#about'),terms:'à propos ddcnorth équipe personnes'},
+  {title:'Données et analyse',description:'Visualisation de données, cartes interactives, recherche et évaluation.',href:siteUrl('#service-planning'),terms:'données analyse visualisation tableaux de bord cartes recherche évaluation transcription'},
+  {title:'Applications et processus',description:'Applications, formulaires de santé, gouvernance et conformité.',href:siteUrl('#service-data'),terms:'applications mobile bureau formulaires santé dossiers gouvernance conformité'},
+  {title:'Outils spatiaux et visuels',description:'Orientation intérieure, vision artificielle, conception paramétrique.',href:siteUrl('#service-digital'),terms:'orientation intérieure vision artificielle inspection conception paramétrique planification'},
+  {title:'Notre approche',description:'Comprendre, construire, remettre.',href:siteUrl('#approach'),terms:'approche processus comprendre concevoir livrer travail'},
+  {title:'À propos',description:'Les fondateurs.',href:siteUrl('#about'),terms:'à propos ddcnorth équipe personnes'},
   {title:'Nous joindre',description:'Parlons de votre prochain projet.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact courriel parler projet joindre ddcnorth.com'}
 ] : [
-  {title:'Planning & direction',description:'Project scoping, roadmaps, and decision support.',href:siteUrl('#service-planning'),terms:'planning direction strategy project scoping roadmaps decision support'},
-  {title:'Data & insight',description:'Data organization, analysis, and visualization.',href:siteUrl('#service-data'),terms:'data insight research analysis visualization information organize'},
-  {title:'Digital tools & systems',description:'Websites, workflow design, and custom tools.',href:siteUrl('#service-digital'),terms:'digital tools systems websites web workflow design custom automation'},
-  {title:'Our approach',description:'Discover, develop, and deliver.',href:siteUrl('#approach'),terms:'approach process discover develop deliver how work'},
-  {title:'About us',description:'A small team with a shared way forward.',href:siteUrl('#about'),terms:'about ddcnorth team people'},
+  {title:'Data & insight',description:'Data visualization, interactive maps, research and evaluation.',href:siteUrl('#service-planning'),terms:'data insight visualization dashboards maps research evaluation transcription'},
+  {title:'Apps & workflows',description:'Apps, healthcare forms and records, governance and compliance.',href:siteUrl('#service-data'),terms:'apps mobile desktop workflows forms healthcare records governance compliance'},
+  {title:'Spatial & visual tools',description:'Indoor navigation, machine vision, parametric design.',href:siteUrl('#service-digital'),terms:'spatial visual indoor navigation wayfinding machine vision inspection parametric design planning'},
+  {title:'Our approach',description:'Understand, build, hand over.',href:siteUrl('#approach'),terms:'approach process discover develop deliver how work'},
+  {title:'About us',description:'The founders.',href:siteUrl('#about'),terms:'about ddcnorth team people'},
   {title:'Contact us',description:'Start a conversation about your next project.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact email talk conversation project ddcnorth.com'}
 ];
 let matches = [];

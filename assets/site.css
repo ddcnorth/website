@@ -34,3 +34,6 @@ html[lang=fr] .hero h1{font-size:clamp(52px,6vw,88px)}
 
 /* Keep the blue punctuation clear of the preceding headline letter. */
 .hero h1 .period{margin-inline-start:.045em}
+
+/* Copy v1.0: several short lines per service panel; footer location line. */
+.service-body p+p{margin-top:10px}.service-body p strong{color:var(--ink);font-weight:600}.footer-location{font-size:11px}
