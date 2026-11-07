@@ -59,6 +59,27 @@ Clients use share links, passwords, or email codes. They do not need Societyer a
 accounts. Password access works independently of mail. Local `EMAIL_PROVIDER=log` is for
 localhost only. Real inbox delivery must be verified by the recipient during a client flow.
 
+## PostHog (optional)
+
+PostHog is off until an administrator turns it on in **/admin → Settings → PostHog**: paste the
+project API key (`phc_…`), pick US/EU cloud or a proxy address, optionally add the numeric project
+ID (for "Open in PostHog" links), save, then press **Send test event**. The same page decides
+whether new shares are tracked by default; each share also has its own "Send this share's visits to
+PostHog" switch.
+
+`POSTHOG_KEY`, `POSTHOG_HOST`, `POSTHOG_PROJECT_ID` and `POSTHOG_UI_HOST` in the Pages project still
+work as a fallback; values saved in Settings take priority.
+
+When on, every portal event (link loaded, opened, wrong password, code sent, page viewed …) is sent
+server-side as `portal_<type>`, except for shares where PostHog is switched off. The distinct id is
+the verified email, otherwise the portal session id; only email visitors get person profiles. The
+D1 log in `/admin` stays the source of truth.
+
+Each space also has a **PostHog in this space** setting (off by default): page views and clicks, or
+those plus session replay (inputs masked). The gateway then injects posthog-js into that space's
+HTML for people with a tracked share, using the same distinct id. Session replay records what
+clients see, so only turn it on with their consent.
+
 ## Automatic private project publishing
 
 For love.fútbol, `.github/workflows/deploy-portal.yml` lives in `ahzs645/lovefutboler`.

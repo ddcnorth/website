@@ -19,6 +19,10 @@ Read `docs/portal/README.md` (architecture, access model) first. Setup steps are
 - `server/api.ts`: routes. Client: `/api/access/:token{,/unlock,/code,/verify}`,
   `/api/client/{code,verify,me,signout}`, `/api/track`. Admin: `/api/admin/*`, guarded by
   `requireAdmin`.
+- `server/settings.ts`: admin-editable settings in D1 (`settings` table) with env fallback, cached
+  30 s per isolate. PostHog config and new-share defaults live here.
+- `server/posthog.ts`: optional PostHog capture (mirrors `logEvent`) and the per-space posthog-js
+  snippet. Never let it throw into the request path.
 - `server/auth.ts`: Societyer Better Auth JWT, then verified email, then `ADMIN_EMAILS`/`ADMIN_EMAIL_DOMAINS`.
 - `functions/`: thin Pages Functions entry points only. Shared code lives in `server/`, outside
   `functions/`, so it doesn't become routes.
@@ -32,7 +36,8 @@ Read `docs/portal/README.md` (architecture, access model) first. Setup steps are
 
 ## Invariants (do not break)
 
-1. **Content checks happen server-side on every file.** Never ship private content in the public
+1. **Content checks happen server-side on every file.** That includes the share's country list
+   (`countryOk` in `authorizeSpace`), which must fail closed when the country is unknown. Never ship private content in the public
    site, in `assets/`, or in a public repo. Never add a client-only check as protection.
 2. **Opening a URL (GET) never starts a countdown or consumes an open.** Only a POST unlock,
    correct password or verified code does. Link loads are logged as `link_opened`.
@@ -70,7 +75,8 @@ Read `docs/portal/README.md` (architecture, access model) first. Setup steps are
 **Add an event type**
 1. Extend `EventType` in `server/access.ts`.
 2. Log it with `logEvent`.
-3. Add a label in `portal/src/admin/tables.tsx` (`EVENT_LABELS`).
+3. Add a label in `portal/src/admin/tables.tsx` (`EVENT_LABELS`), and to `EVENT_FILTERS` if it is
+   worth a filter chip. It is mirrored to PostHog as `portal_<type>` automatically.
 
 ## Verify before committing
 
@@ -103,6 +109,11 @@ Use Playwright (preinstalled) for UI checks of `/admin` (the dev token gate appe
 the local runtime enables the dev token) and `/access/<token>`.
 
 ## Gotchas
+
+- `wrangler pages dev` fills `request.cf` with your real location, so country rules apply locally.
+- The activity map uses `@pgmaps/geo-toolkit` from `vendor/geo-toolkit-<version>-<sha>.tgz`. To
+  update it: `npm run build && npm pack` in PGMaps' `packages/geo-toolkit`, replace the tarball, and
+  `npm install ./vendor/<new>.tgz`. Keep `VisitorMap` lazy so MapLibre never loads on client pages.
 
 - Pages `_routes.json` limits Functions to `/api/*` and `/p/*`. Subdomain mounts need `/*`
   (`PORTAL_SUBDOMAINS=1`).

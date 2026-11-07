@@ -14,6 +14,7 @@ const REASONS: Record<string, string> = {
   session_expired: "Your session ended. Open your link again or sign in with your email.",
   activation_window_closed: "That invitation was not opened in time.",
   unlock_limit: "That link has already been used the maximum number of times.",
+  country_blocked: "That page can’t be opened from your current location.",
   no_access: "That page is private. Open the link you were sent, or sign in with your email.",
 };
 

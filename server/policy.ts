@@ -98,3 +98,21 @@ function minOrNull(...values: (number | null | undefined)[]): number | null {
   const v = values.filter((x): x is number => typeof x === "number");
   return v.length ? Math.min(...v) : null;
 }
+
+/**
+ * Country restriction for a share. `allowed` holds ISO 3166-1 alpha-2 codes; empty means anywhere.
+ * An unknown country (no Cloudflare estimate, Tor "T1", "XX") is refused when a list is set, so
+ * the restriction fails closed. It is based on the visitor's IP, so a VPN can get around it.
+ */
+export function countryAllowed(allowed: readonly string[], country: string | null | undefined): boolean {
+  if (!allowed.length) return true;
+  const c = (country ?? "").toUpperCase();
+  return !!c && allowed.includes(c);
+}
+
+/** Normalise an admin-supplied country list: uppercase two-letter codes, de-duplicated. */
+export function parseCountries(v: unknown): string[] {
+  const list = (Array.isArray(v) ? v.map(String) : String(v ?? "").split(/[\s,;]+/)).map((c) => c.trim().toUpperCase()).filter(Boolean);
+  for (const c of list) if (!/^[A-Z]{2}$/.test(c)) throw new Error(`Not a country code: ${c}`);
+  return [...new Set(list)].sort();
+}

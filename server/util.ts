@@ -100,6 +100,11 @@ export function getCookie(request: Request, name: string): string | null {
   return null;
 }
 
+const coord = (v: unknown): number | null => {
+  const n = Number(v);
+  return v != null && v !== "" && Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null;
+};
+
 /** Request metadata recorded with events. Location comes from Cloudflare's edge (approximate). */
 export function requestMeta(request: Request) {
   const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf;
@@ -108,6 +113,10 @@ export function requestMeta(request: Request) {
     country: (cf?.country as string | undefined) ?? null,
     region: (cf?.region as string | undefined) ?? null,
     city: (cf?.city as string | undefined) ?? null,
+    as_org: (cf?.asOrganization as string | undefined)?.slice(0, 120) ?? null,
+    timezone: (cf?.timezone as string | undefined) ?? null,
+    latitude: coord(cf?.latitude),
+    longitude: coord(cf?.longitude),
     user_agent: request.headers.get("user-agent")?.slice(0, 400) ?? null,
     referer: request.headers.get("referer")?.slice(0, 400) ?? null,
   };
@@ -140,6 +149,20 @@ export function emailAllowed(email: string, list: string[]): boolean {
     const e = entry.trim().toLowerCase();
     return e === email || (e.startsWith("@") && e === domain);
   });
+}
+
+/**
+ * Recipients of an email share: exact addresses and whole domains ("@client.com"). `domains`
+ * may be given separately, with or without the "@", so the admin can offer domain access as
+ * its own option. Stored together in grants.emails.
+ */
+export function parseRecipients(emails: unknown, domains?: unknown): string[] {
+  const split = (v: unknown) => (Array.isArray(v) ? v.map(String) : String(v ?? "").split(/[\s,;]+/)).map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const list = [...split(emails), ...split(domains).map((d) => (d.startsWith("@") ? d : `@${d.replace(/^\*\.|^\*@/, "")}`))];
+  for (const e of list) {
+    if (!(e.startsWith("@") ? /^@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(e) : normalizeEmail(e))) throw new HttpError(400, "bad_email", `Not an email or domain: ${e}`);
+  }
+  return [...new Set(list)];
 }
 
 export function parseList(value: string | undefined): string[] {

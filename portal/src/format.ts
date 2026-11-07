@@ -15,6 +15,7 @@ export function fmtRelative(ms: number | null | undefined): string {
 export function fmtDuration(seconds: number | null | undefined): string {
   if (!seconds) return "0 min";
   if (seconds < 60) return `${seconds} s`;
+  if (seconds >= 86_400) return `${Math.floor(seconds / 86_400)} d ${Math.floor((seconds % 86_400) / 3600)} h`;
   const m = Math.round(seconds / 60);
   if (m < 60) return `${m} min`;
   return `${Math.floor(m / 60)} h ${m % 60} min`;
@@ -40,9 +41,33 @@ export function fmtPlace(r: { city?: string | null; region?: string | null; coun
   return [r.city, r.region, r.country].filter(Boolean).join(", ") || "—";
 }
 
+/** "Prince George, CA" for tight spaces. */
+export function fmtPlaceShort(r: { city?: string | null; region?: string | null; country?: string | null }): string {
+  return [r.city ?? r.region, r.country].filter(Boolean).join(", ") || "Unknown";
+}
+
 export function fmtDevice(ua: string | null | undefined): string {
   if (!ua) return "—";
   const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS X/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
   const br = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : /curl|bot|spider|preview/i.test(ua) ? "Bot/tool" : "Browser";
   return [br, os].filter(Boolean).join(" · ");
+}
+
+const stamp = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const stampYear = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+/** Compact absolute timestamp ("Nov 7, 2:34 PM"); adds the year when it is not this year. */
+export function fmtStamp(ms: number | null | undefined): string {
+  if (!ms) return "—";
+  const d = new Date(ms);
+  return (d.getFullYear() === new Date().getFullYear() ? stamp : stampYear).format(d);
+}
+
+/** Wall-clock length between two times, e.g. a visit from first open to last activity. */
+export function fmtSpan(from: number | null | undefined, to: number | null | undefined): string {
+  if (!from || !to || to < from) return "—";
+  return fmtDuration(Math.round((to - from) / 1000));
+}
+
+export function initials(email: string): string {
+  return email.replace(/@.*/, "").split(/[._-]/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("") || email[0];
 }

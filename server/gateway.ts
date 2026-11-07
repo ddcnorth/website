@@ -1,6 +1,7 @@
 import { getAdmin } from "./auth";
 import { authorizeSpace, getSpaceBySlug, logEvent, type SpaceRow } from "./access";
 import type { Env } from "./env";
+import { bindWaitUntil, posthogConfig, posthogSnippet } from "./posthog";
 import { now, siteOrigin } from "./util";
 
 /**
@@ -59,6 +60,7 @@ export interface ServeOptions {
 
 export async function serveSpace(o: ServeOptions): Promise<Response> {
   const { request, env, slug, mount } = o;
+  bindWaitUntil(request, o.waitUntil);
   const url = new URL(request.url);
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
 
@@ -141,8 +143,16 @@ export async function serveSpace(o: ServeOptions): Promise<Response> {
   // Record the page view for this share and inject the engagement tracker.
   o.waitUntil(recordView(env, request, space, auth.session.id, auth.grantId, "/" + innerPath));
   const page = new Response(object.body, { status: 200, headers });
+  let inject = trackerScript(slug);
+  const ph = space.posthog && auth.analytics ? await posthogConfig(env) : null;
+  if (ph) {
+    const email = auth.session.email;
+    inject += posthogSnippet(ph, {
+      distinctId: email ?? auth.session.id, identified: !!email, email, slug, shareId: auth.grantId, replay: space.posthog >= 2,
+    });
+  }
   return new HTMLRewriter()
-    .on("head", { element(el) { el.append(trackerScript(slug), { html: true }); } })
+    .on("head", { element(el) { el.append(inject, { html: true }); } })
     .transform(page);
 }
 

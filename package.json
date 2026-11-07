@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.13.0",
+    "@pgmaps/geo-toolkit": "file:vendor/geo-toolkit-0.1.0-0157cbe.tgz",
     "better-auth": "^1.7.18",
     "convex": "^1.49.0",
     "jose": "^6.2.15",
+    "maplibre-gl": "^5.24.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5"
