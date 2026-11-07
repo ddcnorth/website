@@ -1,6 +1,6 @@
 ---
 name: client-portal
-description: Work on the DDCNorth client portal in the website repo - share links with passwords, verified-email access, timers/expiry, visitor tracking, the Clerk-protected /admin, and deploying other GitHub repos (e.g. lovefutboler) into private spaces at /p/<slug>/ or <slug>.ddcnorth.com on Cloudflare Pages + D1 + R2. Use when adding a repo as a space, changing access/timing rules, editing the admin or /access pages, touching functions/ server/ portal/ migrations/ projects.json, or debugging why a client can or cannot open a shared page.
+description: Work on the DDCNorth client portal in the website repo - share links with passwords, verified-email access, timers/expiry, visitor tracking, the Societyer-account-protected /admin, and deploying other GitHub repos (e.g. lovefutboler) into private spaces at /p/<slug>/ or <slug>.ddcnorth.com on Cloudflare Pages + D1 + R2. Use when adding a repo as a space, changing access/timing rules, editing the admin or /access pages, touching functions/ server/ portal/ migrations/ projects.json, or debugging why a client can or cannot open a shared page.
 ---
 
 # DDCNorth client portal
@@ -19,11 +19,11 @@ Read `docs/portal/README.md` (architecture, access model) first. Setup steps are
 - `server/api.ts`: routes. Client: `/api/access/:token{,/unlock,/code,/verify}`,
   `/api/client/{code,verify,me,signout}`, `/api/track`. Admin: `/api/admin/*`, guarded by
   `requireAdmin`.
-- `server/auth.ts`: Clerk token, then verified email, then `ADMIN_EMAILS`/`ADMIN_EMAIL_DOMAINS`.
+- `server/auth.ts`: Societyer Better Auth JWT, then verified email, then `ADMIN_EMAILS`/`ADMIN_EMAIL_DOMAINS`.
 - `functions/`: thin Pages Functions entry points only. Shared code lives in `server/`, outside
   `functions/`, so it doesn't become routes.
 - `portal/`: React SPA served at `/portal/`. `_redirects` maps `/admin/*` and `/access/*` to it.
-  The admin is lazy-loaded with Clerk.
+  The admin is lazy-loaded with Better Auth.
 - `migrations/NNNN_*.sql`: D1 schema. Add a new numbered file; never edit an applied one.
 - `projects.json`, `scripts/publish-space.sh`, `.github/workflows/deploy-space.yml`: the repo →
   space pipeline.
@@ -55,8 +55,8 @@ Read `docs/portal/README.md` (architecture, access model) first. Setup steps are
 2. Make sure the project builds with a relative base: `base: './'` in its `vite.config`, or
    `process.env.VITE_BASE`. Hash routing works as is; history routing falls back to `index.html`.
 3. Create the space with the same slug in `/admin`, or with `POST /api/admin/spaces`.
-4. Run **Actions → Deploy space** with the slug. Optionally copy
-   `docs/portal/templates/notify-portal.yml` into the project repo so that pushes redeploy.
+4. Add the project publishing workflow and script described in `docs/portal/SETUP.md`.
+   Include its immutable repository/owner IDs in `projects.json`. Main pushes publish through OIDC.
 5. Want a subdomain? Set the space's subdomain flag, add the Pages custom domain, and build with
    `PORTAL_SUBDOMAINS=1`.
 
@@ -100,7 +100,7 @@ calls and a cookie jar for the client:
 
 Put a test site in local R2 with `sh scripts/publish-space.sh <slug> <dir> <version> --local`.
 Use Playwright (preinstalled) for UI checks of `/admin` (the dev token gate appears when
-`VITE_CLERK_PUBLISHABLE_KEY` is unset) and `/access/<token>`.
+`VITE_ADMIN_AUTH_SITE_URL` is unset) and `/access/<token>`.
 
 ## Gotchas
 
@@ -111,5 +111,12 @@ Use Playwright (preinstalled) for UI checks of `/admin` (the dev token gate appe
 - Workers' PBKDF2 tops out at 100k iterations. Don't raise it.
 - The deny redirect goes to `siteOrigin()`, which is the root domain even from a subdomain. Only
   `/p/…` or `https://*.ddcnorth.com` `next` values are followed (`safeNext`).
-- Clerk `__session` cookie previews only work on the same domain as the Clerk instance. Admin
+- The short-lived HttpOnly `__Host-ddc_admin` cookie authenticates same-host previews. Admin
   previews skip tracking and are marked with the `x-portal-preview: admin` header.
+
+## Automatic project publishing
+
+Registered project repos run `.github/workflows/deploy-portal.yml` and upload through
+`/api/deploy/:slug/{file,activate}` using a short-lived GitHub OIDC token. `projects.json` must
+include `repo_id` and `owner_id`; the server pins repository, immutable IDs, branch, subject,
+workflow and audience. The legacy S3 workflow remains an optional manual alternative.

@@ -1,4 +1,4 @@
-import { requireAdmin, type Admin } from "./auth";
+import { ADMIN_COOKIE, requireAdmin, type Admin } from "./auth";
 import {
   clearSessionCookie, denyMessage, emailGrantsFor, getGrantByToken, getSpace, getSpaceBySlug, grantEmails, issueCode,
   loadSession, logEvent, passwordThrottled, sessionCookie, sessionHasGrant, unlockGrant, verifyCode,
@@ -6,6 +6,7 @@ import {
 } from "./access";
 import type { Env } from "./env";
 import { getPointer } from "./gateway";
+import { activateDeployment, uploadDeploymentFile } from "./deploy";
 import { activationExpiry, canUnlock, grantStatus } from "./policy";
 import { newSessionForEmail } from "./client-session";
 import {
@@ -220,7 +221,19 @@ route("POST", "/api/track", async ({ request, env }) => {
 
 // ============================================================== admin
 
+// Project workflows authenticate with GitHub OIDC, independently of browser sessions.
+route("PUT", "/api/deploy/:slug/file", ({ request, env, params }) => uploadDeploymentFile(request, env, params[0]));
+route("POST", "/api/deploy/:slug/activate", ({ request, env, params }) => activateDeployment(request, env, params[0]));
+
 admin("GET", "/api/admin/me", async ({ admin }) => json(admin));
+
+// Short-lived, host-only cookie lets admin preview links authenticate normal page requests.
+admin("POST", "/api/admin/session", async ({ admin, request }) => {
+  const cookie = `${ADMIN_COOKIE}=${request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? ""}; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=${new Date(admin.expiresAt ?? Date.now()).toUTCString()}`;
+  return withCookie(json(admin), cookie);
+});
+route("DELETE", "/api/admin/session", async () => withCookie(json({ ok: true }),
+  `${ADMIN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`));
 
 admin("GET", "/api/admin/spaces", async ({ env }) => {
   const { results } = await env.DB.prepare(

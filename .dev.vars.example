@@ -3,8 +3,7 @@ PORTAL_DEV=1
 PORTAL_DEV_ADMIN_TOKEN=change-me-local-only
 PORTAL_ROOT_DOMAIN=
 PORTAL_ORIGIN=
-CLERK_AUTHORIZED_PARTIES=http://localhost:8788,http://127.0.0.1:8788
 EMAIL_PROVIDER=log
-# Optional, to test real Clerk sign-in locally (development instance keys):
-# CLERK_SECRET_KEY=sk_test_...
+# Optional: test the Societyer development sign-in service locally.
+# ADMIN_AUTH_SITE_URL=https://gallant-anteater-27.convex.site
 # ADMIN_EMAILS=you@ddcnorth.com

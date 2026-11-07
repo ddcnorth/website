@@ -1,3 +1,5 @@
+> Deployment update (2026-11-07): the selected administrator broker is the existing Societyer DDCNorth Better Auth service on Convex, with Microsoft 365 mail. The Clerk discussion below records the earlier proposal. See SETUP.md and DEPLOYMENT.md for the deployed configuration.
+
 # Options considered for client sharing
 
 The goal: share sub-pages of a React/Vite site, and whole apps from other repos, with clients.
