@@ -100,7 +100,7 @@ calls and a cookie jar for the client:
 
 Put a test site in local R2 with `sh scripts/publish-space.sh <slug> <dir> <version> --local`.
 Use Playwright (preinstalled) for UI checks of `/admin` (the dev token gate appears when
-`VITE_ADMIN_AUTH_SITE_URL` is unset) and `/access/<token>`.
+the local runtime enables the dev token) and `/access/<token>`.
 
 ## Gotchas
 

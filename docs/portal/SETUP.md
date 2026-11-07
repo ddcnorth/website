@@ -24,7 +24,8 @@ Encrypted credentials remain in Pages secrets, outside Git.
 Production uses `https://industrious-cricket-610.convex.site`:
 
 - `ADMIN_AUTH_SITE_URL` in Wrangler identifies the exact JWT issuer.
-- `VITE_ADMIN_AUTH_SITE_URL` in the Pages build environment uses the same origin.
+- `/api/admin/config` supplies that public issuer to the admin UI at runtime; no build-time
+  authentication variable is required.
 - `ADMIN_EMAIL_DOMAINS=ddcnorth.com` allows only verified DDCNorth accounts. Use `ADMIN_EMAILS`
   for additional individual administrators when explicitly intended.
 - The existing broker's `SITE_URL` includes its original Societyer origin, `https://ddcnorth.com`

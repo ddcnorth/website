@@ -1,7 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 import { convexClient, crossDomainClient } from "@convex-dev/better-auth/client/plugins";
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { api, ApiError, type TokenGetter } from "../api";
 import { Brand } from "../Brand";
@@ -10,41 +10,52 @@ import { AdminContext } from "./context";
 import { SpacePage } from "./SpacePage";
 import { SpacesPage } from "./SpacesPage";
 
-const AUTH_SITE_URL = import.meta.env.VITE_ADMIN_AUTH_SITE_URL as string | undefined;
-const authClient = createAuthClient({
-  baseURL: AUTH_SITE_URL,
+const createHostedClient = (siteUrl: string) => createAuthClient({
+  baseURL: siteUrl,
   sessionOptions: { refetchInterval: 120, refetchOnWindowFocus: true },
   plugins: [convexClient(), crossDomainClient(), twoFactorClient()],
 });
+type HostedClient = ReturnType<typeof createHostedClient>;
 
 export default function AdminApp() {
-  if (!AUTH_SITE_URL) {
+  const [settings, setSettings] = useState<{ auth_site_url: string | null } | { error: string } | null>(null);
+  useEffect(() => {
+    let active = true;
+    api<{ auth_site_url: string | null }>("/api/admin/config")
+      .then(value => { if (active) setSettings(value); })
+      .catch(() => { if (active) setSettings({ error: "Could not load sign-in. Please reload the page." }); });
+    return () => { active = false; };
+  }, []);
+  if (!settings) return <div className="center muted">Loading…</div>;
+  if ("error" in settings) return <p className="center" role="alert">{settings.error}</p>;
+  if (!settings.auth_site_url) {
     if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) return <DevGate />;
     return <div className="access-shell"><header><Brand suffix="Admin" /></header><main className="access-card">
       <h1>Admin sign-in is being configured</h1>
       <p>Please contact DDCNorth for administrator access.</p>
     </main></div>;
   }
-  return <HostedGate />;
+  return <HostedGate siteUrl={settings.auth_site_url} />;
 }
 
 /** Existing Societyer accounts, verified by the same hosted Better Auth broker. */
-function HostedGate() {
+function HostedGate({ siteUrl }: { siteUrl: string }) {
+  const authClient = useMemo(() => createHostedClient(siteUrl), [siteUrl]);
   const { data: session, isPending } = authClient.useSession();
   const token = useCallback<TokenGetter>(async () => {
     const result = await authClient.convex.token();
     return result.data?.token ?? null;
-  }, []);
+  }, [authClient]);
   const signOut = async () => {
     await fetch("/api/admin/session", { method: "DELETE" });
     await authClient.signOut();
   };
   if (isPending) return <div className="center muted">Loading…</div>;
-  if (!session) return <HostedSignIn />;
+  if (!session) return <HostedSignIn authClient={authClient} />;
   return <Verified token={token} signOut={() => { void signOut(); }} account={<span className="small muted">{session.user.email}</span>} />;
 }
 
-function HostedSignIn() {
+function HostedSignIn({ authClient }: { authClient: HostedClient }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
