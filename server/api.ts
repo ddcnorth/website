@@ -11,7 +11,7 @@ import { activationExpiry, canUnlock, grantStatus } from "./policy";
 import { newSessionForEmail } from "./client-session";
 import {
   emailAllowed, errorResponse, hashPassword, HttpError, json, newId, normalizeEmail, now, randomToken, readJson,
-  sha256, siteOrigin, verifyPassword,
+  sha256, siteOrigin, verifyPassword, isLocalHost,
 } from "./util";
 
 type Handler = (c: { request: Request; env: Env; params: string[]; url: URL; waitUntil: (p: Promise<unknown>) => void }) => Promise<Response>;
@@ -220,6 +220,11 @@ route("POST", "/api/track", async ({ request, env }) => {
 });
 
 // ============================================================== admin
+
+// Public issuer configuration comes from the deployed environment, not a build-time key.
+route("GET", "/api/admin/config", async ({ request, env }) => json({
+  auth_site_url: isLocalHost(request) && env.PORTAL_DEV === "1" ? null : env.ADMIN_AUTH_SITE_URL ?? null,
+}));
 
 // Project workflows authenticate with GitHub OIDC, independently of browser sessions.
 route("PUT", "/api/deploy/:slug/file", ({ request, env, params }) => uploadDeploymentFile(request, env, params[0]));
