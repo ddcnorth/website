@@ -69,9 +69,10 @@ or sign in by email at `/access` ("Client access" in the footer).
 
 It runs on the same Cloudflare Pages project with Pages Functions, D1 and R2. See
 [docs/portal/README.md](docs/portal/README.md) for the architecture and
-[docs/portal/SETUP.md](docs/portal/SETUP.md) for the one-time setup. **Complete SETUP steps 1–2
-(D1 id in `wrangler.toml`, R2 bucket, build command, secrets) before merging to `main`**, otherwise
-the Pages build cannot bind the database. The GitHub Pages mirror stays static-only (no portal).
+[docs/portal/SETUP.md](docs/portal/SETUP.md) for the one-time setup. Cloudflare storage and the
+Pages build are provisioned; see [docs/portal/DEPLOYMENT.md](docs/portal/DEPLOYMENT.md) for the
+deployment state and remaining sign-in, mail, and CI credential setup.
+The GitHub Pages mirror stays static-only (no portal).
 
 Local: `npm install && cp .dev.vars.example .dev.vars && npm run db:migrate:local && npm run dev`
 (http://localhost:8788). Checks: `npm run typecheck && npm test`.

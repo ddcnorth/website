@@ -12,7 +12,13 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | u
 
 export default function AdminApp() {
   const navigate = useNavigate();
-  if (!PUBLISHABLE_KEY) return <DevGate />;
+  if (!PUBLISHABLE_KEY) {
+    if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) return <DevGate />;
+    return <div className="access-shell"><header><Brand suffix="Admin" /></header><main className="access-card">
+      <h1>Admin sign-in is being configured</h1>
+      <p>Please contact DDCNorth for administrator access.</p>
+    </main></div>;
+  }
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/admin"
       routerPush={(to) => navigate(to)} routerReplace={(to) => navigate(to, { replace: true })}>

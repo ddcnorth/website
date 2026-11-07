@@ -127,7 +127,8 @@ export async function serveSpace(o: ServeOptions): Promise<Response> {
   headers.set("x-content-type-options", "nosniff");
   if (space.visibility === "private") headers.set("x-robots-tag", "noindex, nofollow");
   const html = /\.html?$/i.test(key);
-  headers.set("cache-control", html ? "private, no-store" : space.visibility === "public" ? "public, max-age=3600" : "private, max-age=3600");
+  // Browsers must check access again after expiry or revocation, including for assets.
+  headers.set("cache-control", html || space.visibility === "private" ? "private, no-store" : "public, max-age=3600");
 
   if (!("body" in object)) return new Response(null, { status: 304, headers });
   const status = (object as R2ObjectBody).range && request.headers.has("range") ? 206 : 200;
