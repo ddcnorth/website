@@ -1,4 +1,4 @@
-import type { GrantRow } from "./access";
+import { insertSession, type GrantRow } from "./access";
 import type { Env } from "./env";
 import { newId, now, randomToken, requestMeta, sha256 } from "./util";
 
@@ -8,11 +8,7 @@ export async function newSessionForEmail(env: Env, request: Request, email: stri
   const minutes = Math.max(...grants.map((g) => g.session_minutes || 720));
   const expiresAt = at + minutes * 60_000;
   const token = randomToken(32);
-  const m = requestMeta(request);
   const session = { id: newId("ses"), expires_at: expiresAt };
-  await env.DB.prepare(
-    `INSERT INTO sessions (id, token_hash, email, created_at, expires_at, last_seen_at, ip, country, region, city, user_agent)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(session.id, await sha256(token), email, at, expiresAt, at, m.ip, m.country, m.region, m.city, m.user_agent).run();
+  await insertSession(env, { id: session.id, token_hash: await sha256(token), email, created_at: at, expires_at: expiresAt }, requestMeta(request));
   return { token, session };
 }

@@ -1,7 +1,7 @@
 # Client portal
 
 Share parts of ddcnorth.com, including whole apps built in other GitHub repos, with clients.
-Each share can be a link, a link with a password, or a list of verified emails, with its own
+Each share can be a link, a link with a password, or verified emails (specific people or anyone at a domain), with its own
 timing rules. You can see who opened what, when, from roughly where, and for how long.
 
 - **Admin:** `https://ddcnorth.com/admin`. The same verified email/password accounts as Societyer DDCNorth. Only
@@ -82,6 +82,7 @@ truth, with tests in `tests/policy.test.ts`):
 | Re-enter after | 12 h | Browser session length; never past the end of access |
 | Max opens | 1 | Successful unlocks (new browsers). 1 = single-use link |
 | Revoke | now | Stops all access immediately; can be restored |
+| Countries | Canada + US | Opened only from these countries (Cloudflare's IP estimate), checked on every request. Unknown locations are refused when a list is set; a VPN gets around it |
 
 Example: open within 7 days, 48 h once opened, never after Friday 17:00. Someone who opens it
 Tuesday keeps access until Thursday. Someone who opens it Friday morning keeps it only until Friday
@@ -104,12 +105,22 @@ Admin actions on a share:
   injects into each shared HTML page.
 - **Active time:** counted only while the page is visible *and* has had input in the last 60 s. It
   is evidence of engagement, not proof of reading.
-- **Where:** Cloudflare's city, region and country estimate for the visitor's IP. VPNs move it,
-  and it is never a street address.
+- **Where:** Cloudflare's city, region and country estimate for the visitor's IP, plus the network
+  (AS organisation, e.g. an ISP or university) and the IP itself. VPNs move it, and it is never a
+  street address. Select any visitor or log row in `/admin` for the full visit: every IP seen,
+  first open, last activity, visit span, active time and an event timeline.
 - **Who:**
-  - Email shares: the verified address.
+  - Email shares: the verified address. A share can list exact addresses, whole domains
+    ("Anyone at a domain", e.g. everyone `@unbc.ca`), or both.
   - Link and password shares: "Link visitor". Links can be forwarded, so use per-client links or
     email shares when attribution matters.
+
+`/admin/activity` puts the located visits on a map (built with
+[geo-toolkit](https://github.com/ahzs645/geo-toolkit), vendored as `vendor/geo-toolkit-*.tgz` and
+loaded only on that page), with failed or refused attempts in a second colour. Admin sign-ins and
+sign-outs, and client sign-outs, are logged too (Settings shows the latest admin ones).
+
+Optionally, all of this is also sent to PostHog (see [SETUP.md](SETUP.md#posthog-optional)).
 
 The client pages tell visitors that access is logged. Add a privacy page before relying on this
 widely (see `docs/design-review.md`).

@@ -1,5 +1,6 @@
+import { emailAllowed, parseRecipients } from "../server/util";
 import { describe, expect, it } from "vitest";
-import { activationExpiry, canUnlock, grantStatus, isActive, sessionExpiry, type GrantTiming } from "../server/policy";
+import { activationExpiry, canUnlock, countryAllowed, grantStatus, isActive, parseCountries, sessionExpiry, type GrantTiming } from "../server/policy";
 
 const H = 3_600_000;
 const T0 = Date.UTC(2026, 10, 2, 9); // Monday 09:00 UTC
@@ -64,5 +65,40 @@ describe("grantStatus", () => {
     expect(grantStatus(grant(), [{ first_unlocked_at: T0, expires_at: T0 + H }], T0 + 2 * H)).toBe("expired");
     expect(grantStatus({ ...grant(), timer_scope: "recipient" }, [{ first_unlocked_at: T0, expires_at: T0 + H }], T0 + 2 * H)).toBe("active");
     expect(grantStatus(grant({ revoked_at: T0 }), [], T0)).toBe("revoked");
+  });
+});
+
+describe("email share recipients", () => {
+  it("merges exact emails with whole domains given with or without @", () => {
+    expect(parseRecipients("Jane@Client.com, sam@client.com", ["unbc.ca", "@northern.ca", "*.example.org"]))
+      .toEqual(["jane@client.com", "sam@client.com", "@unbc.ca", "@northern.ca", "@example.org"]);
+  });
+  it("rejects malformed entries", () => {
+    expect(() => parseRecipients("not-an-email")).toThrow();
+    expect(() => parseRecipients([], ["unbc"])).toThrow();
+    expect(() => parseRecipients([], ["bad domain.com"])).toThrow();
+  });
+  it("lets anyone at a listed domain in, but not lookalike domains", () => {
+    const list = parseRecipients([], ["unbc.ca"]);
+    expect(emailAllowed("anyone@unbc.ca", list)).toBe(true);
+    expect(emailAllowed("x@unbc.ca.evil.com", list)).toBe(false);
+    expect(emailAllowed("x@notunbc.ca", list)).toBe(false);
+  });
+});
+
+describe("country restrictions", () => {
+  it("allows anywhere when no list is set", () => {
+    expect(countryAllowed([], null)).toBe(true);
+    expect(countryAllowed([], "FR")).toBe(true);
+  });
+  it("allows listed countries only and fails closed on unknown locations", () => {
+    expect(countryAllowed(["CA", "US"], "ca")).toBe(true);
+    expect(countryAllowed(["CA"], "US")).toBe(false);
+    expect(countryAllowed(["CA"], null)).toBe(false);
+    expect(countryAllowed(["CA"], "T1")).toBe(false);
+  });
+  it("normalises admin input", () => {
+    expect(parseCountries("us, ca CA")).toEqual(["CA", "US"]);
+    expect(() => parseCountries(["Canada"])).toThrow();
   });
 });

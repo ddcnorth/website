@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { codeEmail, sendMail } from "./email";
-import { canUnlock, isActive, sessionExpiry, type ActivationTiming, type GrantTiming } from "./policy";
+import { capture } from "./posthog";
+import { canUnlock, countryAllowed, isActive, sessionExpiry, type ActivationTiming, type GrantTiming } from "./policy";
 import {
   emailAllowed, getCookie, HttpError, newId, now, parseList, randomCode, randomToken, requestMeta, sha256, siteOrigin,
 } from "./util";
@@ -9,13 +10,14 @@ export const SESSION_COOKIE = "ddc_access";
 
 export interface SpaceRow {
   id: string; slug: string; title: string; description: string;
-  visibility: "private" | "public"; subdomain: number; repo: string | null;
+  visibility: "private" | "public"; subdomain: number; repo: string | null; posthog: number;
   archived_at: number | null; created_by: string | null; created_at: number; updated_at: number;
 }
 
 export interface GrantRow extends GrantTiming {
   id: string; space_id: string; label: string; method: "link" | "password" | "email";
   token_hash: string; password_hash: string | null; emails: string; timer_scope: "grant" | "recipient";
+  allowed_countries: string; posthog: number;
   notify_on_open: number; note: string; created_by: string | null; created_at: number; updated_at: number;
 }
 
@@ -24,23 +26,38 @@ export interface ActivationRow extends ActivationTiming { id: string; grant_id: 
 export interface SessionRow {
   id: string; token_hash: string; email: string | null; created_at: number; expires_at: number;
   last_seen_at: number; ip: string | null; country: string | null; region: string | null; city: string | null;
-  user_agent: string | null; revoked_at: number | null;
+  as_org: string | null; timezone: string | null; latitude: number | null; longitude: number | null; user_agent: string | null; revoked_at: number | null;
 }
 
 export type EventType =
   | "link_opened" | "unlock_ok" | "unlock_failed" | "unlock_denied" | "code_sent" | "code_failed"
-  | "signin_ok" | "view" | "denied" | "admin_preview" | "admin_change";
+  | "signin_ok" | "signout" | "view" | "denied" | "admin_preview" | "admin_change" | "admin_signin" | "admin_signout";
 
 export async function logEvent(
   env: Env, request: Request | null, type: EventType,
   f: { space_id?: string | null; grant_id?: string | null; session_id?: string | null; email?: string | null; path?: string | null; detail?: unknown } = {},
 ) {
-  const m = request ? requestMeta(request) : { ip: null, country: null, region: null, city: null, user_agent: null, referer: null };
+  const m = request ? requestMeta(request) : null;
+  const at = now();
   await env.DB.prepare(
-    `INSERT INTO events (ts, type, space_id, grant_id, session_id, email, path, ip, country, region, city, user_agent, referer, detail)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(now(), type, f.space_id ?? null, f.grant_id ?? null, f.session_id ?? null, f.email ?? null, f.path ?? null,
-    m.ip, m.country, m.region, m.city, m.user_agent, m.referer, f.detail === undefined ? null : JSON.stringify(f.detail)).run();
+    `INSERT INTO events (ts, type, space_id, grant_id, session_id, email, path, ip, country, region, city, as_org, latitude, longitude,
+       user_agent, referer, detail)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(at, type, f.space_id ?? null, f.grant_id ?? null, f.session_id ?? null, f.email ?? null, f.path ?? null,
+    m?.ip ?? null, m?.country ?? null, m?.region ?? null, m?.city ?? null, m?.as_org ?? null, m?.latitude ?? null, m?.longitude ?? null,
+    m?.user_agent ?? null, m?.referer ?? null,
+    f.detail === undefined ? null : JSON.stringify(f.detail)).run();
+  // Admin changes stay in the portal log only.
+  if (!type.startsWith("admin_")) {
+    capture(env, request, {
+      event: `portal_${type}`, grant_id: f.grant_id, email: f.email, session_id: f.session_id, ip: m?.ip, timestamp: at,
+      properties: {
+        portal_space: f.space_id ?? undefined, portal_share: f.grant_id ?? undefined, portal_session: f.session_id ?? undefined,
+        $pathname: f.path ?? undefined, $user_agent: m?.user_agent ?? undefined, $referrer: m?.referer ?? undefined,
+        ...(f.detail && typeof f.detail === "object" ? f.detail as Record<string, unknown> : {}),
+      },
+    });
+  }
 }
 
 // ---------------------------------------------------------------- lookups
@@ -59,6 +76,23 @@ export async function getGrantByToken(env: Env, token: string) {
 export const grantEmails = (g: GrantRow): string[] => {
   try { return JSON.parse(g.emails) as string[]; } catch { return []; }
 };
+
+export const grantCountries = (g: Pick<GrantRow, "allowed_countries">): string[] => {
+  try { return JSON.parse(g.allowed_countries ?? "[]") as string[]; } catch { return []; }
+};
+
+/** Is this request coming from a country the share allows? */
+export const countryOk = (g: Pick<GrantRow, "allowed_countries">, request: Request) =>
+  countryAllowed(grantCountries(g), requestMeta(request).country);
+
+export async function insertSession(env: Env, s: Pick<SessionRow, "id" | "token_hash" | "email" | "created_at" | "expires_at">, m: ReturnType<typeof requestMeta>) {
+  await env.DB.prepare(
+    `INSERT INTO sessions (id, token_hash, email, created_at, expires_at, last_seen_at, ip, country, region, city, as_org, timezone,
+       latitude, longitude, user_agent)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(s.id, s.token_hash, s.email, s.created_at, s.expires_at, s.created_at, m.ip, m.country, m.region, m.city, m.as_org, m.timezone,
+    m.latitude, m.longitude, m.user_agent).run();
+}
 
 export async function loadSession(request: Request, env: Env): Promise<SessionRow | null> {
   const token = getCookie(request, SESSION_COOKIE);
@@ -126,6 +160,10 @@ export async function unlockGrant(
   let activation = await env.DB.prepare("SELECT * FROM activations WHERE grant_id = ? AND recipient_key = ?")
     .bind(grant.id, recipientKey).first<ActivationRow>();
 
+  if (!countryOk(grant, request)) {
+    if (!opts.quiet) await logEvent(env, request, "unlock_denied", { space_id: grant.space_id, grant_id: grant.id, email, detail: { reason: "country_blocked" } });
+    throw new HttpError(403, "country_blocked", denyMessage("country_blocked"));
+  }
   const decision = canUnlock(grant, activation, at);
   if (!decision.ok) {
     if (!opts.quiet) await logEvent(env, request, "unlock_denied", { space_id: grant.space_id, grant_id: grant.id, email, detail: { reason: decision.reason } });
@@ -158,12 +196,10 @@ export async function unlockGrant(
     session = {
       id: newId("ses"), token_hash: await sha256(newToken), email, created_at: at, expires_at: sessionExpiresAt,
       last_seen_at: at, ip: meta.ip, country: meta.country, region: meta.region, city: meta.city,
+      as_org: meta.as_org, timezone: meta.timezone, latitude: meta.latitude, longitude: meta.longitude,
       user_agent: meta.user_agent, revoked_at: null,
     };
-    await env.DB.prepare(
-      `INSERT INTO sessions (id, token_hash, email, created_at, expires_at, last_seen_at, ip, country, region, city, user_agent)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(session.id, session.token_hash, email, at, sessionExpiresAt, at, meta.ip, meta.country, meta.region, meta.city, meta.user_agent).run();
+    await insertSession(env, session, meta);
   } else if (session.expires_at < sessionExpiresAt) {
     await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE id = ?").bind(sessionExpiresAt, session.id).run();
     session.expires_at = sessionExpiresAt;
@@ -207,6 +243,7 @@ export function denyMessage(reason: string): string {
     case "expired": return "This link has expired.";
     case "activation_window_closed": return "This invitation was not opened in time and has expired.";
     case "unlock_limit": return "This link has already been used the maximum number of times.";
+    case "country_blocked": return "This page can’t be opened from your current location.";
     default: return "You do not have access to this page.";
   }
 }
@@ -277,7 +314,7 @@ export async function emailGrantsFor(env: Env, email: string, spaceId?: string):
 
 export type Authorization =
   | { ok: true; mode: "public" | "admin"; session: SessionRow | null; grantId: null }
-  | { ok: true; mode: "grant"; session: SessionRow; grantId: string }
+  | { ok: true; mode: "grant"; session: SessionRow; grantId: string; analytics: boolean }
   | { ok: false; reason: string };
 
 /**
@@ -301,8 +338,9 @@ export async function authorizeSpace(
     ).bind(session.id, space.id).all<GrantRow & { sg_expires: number; a_first: number; a_expires: number | null }>();
     let reason: string | null = null;
     for (const row of results) {
+      if (!countryOk(row, request)) { reason = "country_blocked"; continue; }
       const r = isActive(row, { first_unlocked_at: row.a_first, expires_at: row.a_expires }, at);
-      if (!r && row.sg_expires > at) return { ok: true, mode: "grant", session, grantId: row.id };
+      if (!r && row.sg_expires > at) return { ok: true, mode: "grant", session, grantId: row.id, analytics: !!row.posthog };
       reason = r ?? "session_expired";
     }
     // Verified-email visitors pick up any email share for this space on first visit.
@@ -310,7 +348,7 @@ export async function authorizeSpace(
       for (const grant of await emailGrantsFor(env, session.email, space.id)) {
         try {
           await unlockGrant(env, request, grant, { email: session.email, session, waitUntil, quiet: true });
-          return { ok: true, mode: "grant", session, grantId: grant.id };
+          return { ok: true, mode: "grant", session, grantId: grant.id, analytics: !!grant.posthog };
         } catch (e) {
           reason = e instanceof HttpError ? e.code : "denied";
         }

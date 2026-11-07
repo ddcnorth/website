@@ -27,6 +27,16 @@ export interface Env {
   /** Where "first opened" notifications go (comma-separated). */
   NOTIFY_EMAIL?: string;
 
+  /** PostHog project API key (phc_...). When set, portal events are mirrored to PostHog and
+   * spaces can opt in to posthog-js. Public by design, but kept out of the repo per environment. */
+  POSTHOG_KEY?: string;
+  /** Ingestion host, default https://us.i.posthog.com (EU: https://eu.i.posthog.com, or a proxy). */
+  POSTHOG_HOST?: string;
+  /** PostHog app origin for admin links, default derived from POSTHOG_HOST. */
+  POSTHOG_UI_HOST?: string;
+  /** Numeric project id, enables "Open in PostHog" person links in the admin. */
+  POSTHOG_PROJECT_ID?: string;
+
   /** Local development only: "1" enables the dev admin token on localhost and echoes email codes. */
   PORTAL_DEV?: string;
   PORTAL_DEV_ADMIN_TOKEN?: string;

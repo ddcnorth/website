@@ -1,10 +1,24 @@
 import { createContext, useContext } from "react";
 import { api, type TokenGetter } from "../api";
 
+export interface Integrations {
+  posthog: { enabled: boolean; app_url: string | null; person_links: boolean };
+}
+
+/** Defaults applied to new shares (from Settings). */
+export interface AdminDefaults {
+  posthog: boolean;
+  allowed_countries: string[];
+}
+
 export interface AdminCtx {
   email: string;
   token: TokenGetter;
   signOut: () => void;
+  integrations: Integrations;
+  defaults: AdminDefaults;
+  /** Re-read integrations and defaults after Settings change them. */
+  refresh: () => void;
 }
 
 export const AdminContext = createContext<AdminCtx | null>(null);
