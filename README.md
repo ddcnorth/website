@@ -60,7 +60,7 @@ is public as authorized by its owner for hosting on GitHub Free.
 
 ## Client portal
 
-`/admin` (Clerk sign-in with the Microsoft 365 tenant) manages **spaces**: pages or whole apps
+`/admin` (the same verified accounts as Societyer DDCNorth) manages **spaces**: pages or whole apps
 built from other GitHub repos (e.g. `ahzs645/lovefutboler`) and served privately at `/p/<slug>/`
 or `<slug>.ddcnorth.com`. Each space can be shared by link, link + password, or verified email,
 with timing rules (countdown from first open, deadline, hard end, max opens, revoke). The admin
@@ -71,7 +71,7 @@ It runs on the same Cloudflare Pages project with Pages Functions, D1 and R2. Se
 [docs/portal/README.md](docs/portal/README.md) for the architecture and
 [docs/portal/SETUP.md](docs/portal/SETUP.md) for the one-time setup. Cloudflare storage and the
 Pages build are provisioned; see [docs/portal/DEPLOYMENT.md](docs/portal/DEPLOYMENT.md) for the
-deployment state and remaining sign-in, mail, and CI credential setup.
+deployment state, account sign-in, email, and automatic project publishing.
 The GitHub Pages mirror stays static-only (no portal).
 
 Local: `npm install && cp .dev.vars.example .dev.vars && npm run db:migrate:local && npm run dev`

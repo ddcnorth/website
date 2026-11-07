@@ -1,7 +1,7 @@
 # Cloudflare deployment
 
-Provisioned on 2026-11-07 in Cloudflare account `479e77f49d4ac5d7498529ee360f194b`.
-The Pages project remains connected to `ddcnorth/website`, production branch `main`.
+Configured on 2026-11-07 in Cloudflare account `479e77f49d4ac5d7498529ee360f194b`.
+The Pages project is connected to `ddcnorth/website`, production branch `main`.
 
 | Environment | Database | Private build bucket |
 | --- | --- | --- |
@@ -12,39 +12,59 @@ Both databases have migration `0001_portal.sql` applied. Resource IDs and bindin
 `wrangler.toml`; previews have their own resources. Pages builds with `npm run build`, Node 22,
 output `_site`. Both environments have `fail_open=false`.
 
+## Accounts and email
+
+Production administration reuses Societyer DDCNorth's Better Auth broker at
+`https://industrious-cricket-610.convex.site`, with its existing verified DDCNorth accounts.
+The broker retains its original Societyer trusted origin and now also allows `ddcnorth.com`
+and `www.ddcnorth.com`. The portal checks signed JWT issuer, audience, expiry and verified email
+before granting administration. `/admin` supports password and authenticator/recovery-code flows.
+An actual account sign-in must be verified by the account owner; no user password was reset or
+account created as part of provisioning.
+
+Microsoft 365 delivery reuses `societyer@ddcnorth.com` and its existing single-mailbox-scoped
+application. The three mail credentials are encrypted Pages secrets. The Microsoft token
+exchange was accepted; inbox delivery must be checked in a recipient's real code/notification
+flow. Credential rotation must update both the existing Societyer backend and the portal.
+
+Preview uses the separate development auth broker and has no production mail credentials.
+Its permitted frontend origins and development users can be configured when interactive
+preview sign-in is needed.
+
 ## love.fútbol
 
-The private repo `ahzs645/lovefutboler`, commit `bffaf067bb4b`, is built and uploaded to the
-production bucket under `sites/lovefutbol/bffaf067bb4b/`. Its `current.json` points at that version.
-The space at `https://ddcnorth.com/p/lovefutbol/` is private, with one password share.
-The share link and generated password are held separately from Git, in the operator's private
-credentials file. The browser session lasts 12 hours; the initial share has no hard end date.
+`ahzs645/lovefutboler` is registered as the private space
+`https://ddcnorth.com/p/lovefutbol/`. Its password share link and generated password are held
+outside Git in the operator's private credentials file. Browser sessions last 12 hours; the
+initial share has no hard end date. Administrators can add expiry/countdown limits or revoke it.
 
-R2 public access is disabled and there are no bucket custom domains. The project is delivered
-through the existing Cloudflare Pages Functions gateway, which checks access for HTML, scripts,
-images and data. Private responses use `private, no-store` so cached assets do not skip a later
-expiry or revocation check. No separate public love.fútbol Pages origin is created.
+The project repository publishes main-branch builds through `deploy-portal.yml`. GitHub OIDC
+pins repository and owner IDs, branch, subject, workflow and audience. Files are uploaded to a
+commit-SHA prefix in private R2 storage, then `current.json` switches the live build. No stored
+GitHub read token or R2 credential is needed by that workflow. The old public GitHub Pages
+publisher is replaced; the public mirror is retired during activation.
 
-## Remaining integrations
+R2 public access is disabled and there are no bucket custom domains. Every project file is
+served through the existing Cloudflare Pages Functions gateway, with access checks for HTML,
+scripts, images and data. Private responses use `private, no-store` so a cached asset cannot
+skip a later expiry or revocation check. There is no separate public love.fútbol Pages origin.
 
-- Admin sign-in requires the intended production Clerk application, its publishable build key,
-  and its server-side verification key. Microsoft 365 sign-in must be enabled in that application.
-  Until configured, the admin API refuses anonymous requests and the production UI shows that
-  administrator sign-in is being configured. The local development token is never enabled remotely.
-- Email codes and notifications require Microsoft Graph credentials and a sender mailbox, or
-  the documented Resend alternative. Password shares work independently of email.
-- The **Deploy space** GitHub workflow needs the bucket-scoped R2 credentials and private-repo
-  read token listed in `SETUP.md`. They are not present yet. The first project build was published
-  using the authenticated local Wrangler CLI; automatic redeployment is not configured.
+MapLibre is updated to patched 6.4.1 for GHSA-jrc7-96c5-q579, with the v6 ESM import, Vite worker
+bundle and typed paint properties. The production project build and dependency audit pass.
 
 ## Verification
 
-- Portal: typecheck, all 8 timing tests, production build, Pages Functions compilation.
-- love.fútbol: `npm ci` and production build (162 published files).
-- Local gateway integration: anonymous HTML redirects, anonymous assets are refused, wrong
-  passwords are refused, correct passwords issue HttpOnly sessions, unlocked content loads,
-  private assets have no-store headers, revocation and expiry block existing sessions, and
-  anonymous admin API requests are refused (9 checks).
+- Portal typecheck, 28 timing/authentication/deployment identity tests, production frontend
+  build, Pages Functions compilation.
+- Admin identity checks reject wrong issuer/audience, expired or unsigned claims, unverified
+  emails, foreign email domains, forged signatures and remote use of the local developer token.
+- GitHub deployment checks reject wrong repository/owner IDs, branches, subjects, workflows,
+  audiences, pull-request events and unregistered spaces.
+- love.fútbol TypeScript/Vite production build and dependency audit (zero reported issues).
+- Nine local gateway checks: anonymous HTML redirects, anonymous assets refused, wrong
+  passwords refused, correct password issues an HttpOnly session, unlocked content loads,
+  private asset no-store headers, revocation and expiry stop existing sessions, and anonymous
+  administrator API requests refused.
 
-Follow `SETUP.md` to finish sign-in, mail and automatic project publishing. Never put client
-passwords, share tokens, Clerk secrets, or R2 credentials into this public repository.
+See `SETUP.md` for operational instructions. Keep passwords, share tokens and server credentials
+out of this public repository.

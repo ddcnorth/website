@@ -4,7 +4,7 @@ Share parts of ddcnorth.com, including whole apps built in other GitHub repos, w
 Each share can be a link, a link with a password, or a list of verified emails, with its own
 timing rules. You can see who opened what, when, from roughly where, and for how long.
 
-- **Admin:** `https://ddcnorth.com/admin`. Clerk sign-in (Microsoft 365 tenant). Only
+- **Admin:** `https://ddcnorth.com/admin`. The same verified email/password accounts as Societyer DDCNorth. Only
   `ADMIN_EMAILS` / `ADMIN_EMAIL_DOMAINS` get in.
 - **Client links:** `https://ddcnorth.com/access/<token>`
 - **Client sign-in by email:** `https://ddcnorth.com/access`, linked as "Client access" in the footer.
@@ -30,11 +30,11 @@ Setup steps are in [SETUP.md](SETUP.md). The options we evaluated and why we cho
           spaces, grants (shares),       sites/<slug>/current.json  → {"version": "<sha>"}
           activations, sessions,         sites/<slug>/<sha>/index.html, assets/…
           session_grants, email_codes,         ▲
-          events                               │ aws s3 sync (R2 S3 API)
+          events                               │ GitHub OIDC upload API
                                                │
-          GitHub: website repo  .github/workflows/deploy-space.yml
-                  reads projects.json → checks out project repo → npm ci && npm run build → publish
-                  triggered manually or by the project repo (repository_dispatch)
+          GitHub: project repo .github/workflows/deploy-portal.yml
+                  npm ci → npm run build → GitHub OIDC → portal upload API → private R2
+                  triggered on main pushes or manually
 ```
 
 **Why R2 rather than a separate Pages project per repo?** If each repo has its own
@@ -120,7 +120,7 @@ Checked in local end-to-end runs:
 - **Private content stays private:**
   - It never ships in the public site. It lives in R2, and every file request is authorised. Asset
     requests without access get `401`; page requests are redirected to `/access`.
-  - Private responses are `private`/`no-store` for HTML, with `X-Robots-Tag: noindex`.
+  - Private responses are `private, no-store` for every file, with `X-Robots-Tag: noindex`.
 - **Secrets are stored as hashes:**
   - Link tokens and session tokens are stored as SHA-256.
   - Passwords use PBKDF2 (100k iterations). Codes are 6 digits, expire after 10 minutes, and allow
@@ -131,8 +131,8 @@ Checked in local end-to-end runs:
     cannot be probed.
 - **Write requests are protected:**
   - Cross-site writes are refused with an `Origin` check on top of `SameSite=Lax`.
-  - Admin API calls need a Clerk session token (a Bearer token, verified with the Clerk backend
-    SDK) whose verified email is on the admin list.
+  - Admin API calls need a short-lived Societyer Better Auth JWT. Its signature, issuer, audience,
+    expiry and verified email are checked before applying the admin allowlist.
 - **The dev shortcut cannot reach production:** `PORTAL_DEV_ADMIN_TOKEN` works only when
   `PORTAL_DEV=1` *and* the request host is localhost.
 - **Expiry has limits:** it stops future delivery. It cannot claw back what someone already saw,
@@ -147,9 +147,9 @@ Checked in local end-to-end runs:
 | `functions/_middleware.ts` | subdomain mounts |
 | `server/access.ts` | sessions, unlocking, email codes, authorisation |
 | `server/policy.ts` | pure timing rules |
-| `server/auth.ts` | Clerk admin verification |
+| `server/auth.ts` | Societyer Better Auth JWT verification |
 | `server/email.ts` | Microsoft Graph, Resend or log mail |
-| `portal/` | React SPA: `src/access/*` for clients, `src/admin/*` (lazy, loads Clerk) for admins |
+| `portal/` | React SPA: `src/access/*` for clients, `src/admin/*` (lazy, loads Better Auth) for admins |
 | `migrations/` | D1 schema |
 | `projects.json` | repos that deploy into spaces |
 | `scripts/publish-space.sh` | upload a build to R2 (CI or `--local`) |

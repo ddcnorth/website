@@ -5,11 +5,8 @@ export interface Env {
   SITES: R2Bucket;
   ASSETS: Fetcher;
 
-  /** Clerk (admin sign-in). Secret key or PEM JWT key verifies session tokens. */
-  CLERK_SECRET_KEY?: string;
-  CLERK_JWT_KEY?: string;
-  /** Comma-separated exact origins allowed to mint admin tokens, e.g. https://ddcnorth.com */
-  CLERK_AUTHORIZED_PARTIES?: string;
+  /** Societyer DDCNorth's Better Auth / Convex HTTP origin (public JWT issuer). */
+  ADMIN_AUTH_SITE_URL?: string;
   /** Who is an admin: exact emails and/or whole domains (comma-separated). */
   ADMIN_EMAILS?: string;
   ADMIN_EMAIL_DOMAINS?: string;
