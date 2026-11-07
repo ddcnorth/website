@@ -28,19 +28,19 @@ function updateLanguageLinks(){
 updateLanguageLinks();
 const pagePath = url => url.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
 const searchEntries = isFrench ? [
-  {title:'Données et analyse',description:'Visualisation de données, cartes interactives, recherche et évaluation.',href:siteUrl('#service-planning'),terms:'données analyse visualisation tableaux de bord cartes recherche évaluation transcription'},
-  {title:'Applications et processus',description:'Applications, formulaires de santé, gouvernance et conformité.',href:siteUrl('#service-data'),terms:'applications mobile bureau formulaires santé dossiers gouvernance conformité'},
-  {title:'Outils spatiaux et visuels',description:'Orientation intérieure, vision artificielle, conception paramétrique.',href:siteUrl('#service-digital'),terms:'orientation intérieure vision artificielle inspection conception paramétrique planification'},
-  {title:'Notre approche',description:'Comprendre, construire, remettre.',href:siteUrl('#approach'),terms:'approche processus comprendre concevoir livrer travail'},
-  {title:'À propos',description:'Les fondateurs.',href:siteUrl('#about'),terms:'à propos ddcnorth équipe personnes'},
-  {title:'Nous joindre',description:'Parlons de votre prochain projet.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact courriel parler projet joindre ddcnorth.com'}
+  {title:'Données et analyse',description:'Tableaux de bord, cartes et rapports.',href:siteUrl('#service-planning'),terms:'données analyse tableaux de bord cartes interactives rapports jeu de données visualisation'},
+  {title:'Applications et processus',description:'Applications simples et formulaires numériques.',href:siteUrl('#service-data'),terms:'applications mobile formulaires numériques accueil terrain suivi feuilles de calcul processus'},
+  {title:'Outils spatiaux et visuels',description:'Plans d’étage, inspections par photo, modèles de conception.',href:siteUrl('#service-digital'),terms:'spatial visuel orientation plan étage bâtiment site image inspection photos modèles conception'},
+  {title:'Notre approche',description:'Comprendre, construire, remettre.',href:siteUrl('#approach'),terms:'approche processus comprendre construire remettre portée prix'},
+  {title:'À propos',description:'Une petite équipe de Prince George (C.-B.).',href:siteUrl('#about'),terms:'à propos ddcnorth équipe prince george colombie-britannique'},
+  {title:'Nous joindre',description:'Parlez-nous de votre projet.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact courriel parler projet joindre ddcnorth.com'}
 ] : [
-  {title:'Data & insight',description:'Data visualization, interactive maps, research and evaluation.',href:siteUrl('#service-planning'),terms:'data insight visualization dashboards maps research evaluation transcription'},
-  {title:'Apps & workflows',description:'Apps, healthcare forms and records, governance and compliance.',href:siteUrl('#service-data'),terms:'apps mobile desktop workflows forms healthcare records governance compliance'},
-  {title:'Spatial & visual tools',description:'Indoor navigation, machine vision, parametric design.',href:siteUrl('#service-digital'),terms:'spatial visual indoor navigation wayfinding machine vision inspection parametric design planning'},
-  {title:'Our approach',description:'Understand, build, hand over.',href:siteUrl('#approach'),terms:'approach process discover develop deliver how work'},
-  {title:'About us',description:'The founders.',href:siteUrl('#about'),terms:'about ddcnorth team people'},
-  {title:'Contact us',description:'Start a conversation about your next project.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact email talk conversation project ddcnorth.com'}
+  {title:'Data & insight',description:'Dashboards, maps and reports.',href:siteUrl('#service-planning'),terms:'data insight dashboards interactive maps reports dataset visualization'},
+  {title:'Apps & workflows',description:'Simple apps and digital forms.',href:siteUrl('#service-data'),terms:'apps mobile digital forms intake field tracker spreadsheets workflows'},
+  {title:'Spatial & visual tools',description:'Floor plans, photo inspections, design models.',href:siteUrl('#service-digital'),terms:'spatial visual wayfinding floor plan building site image inspection photos design models'},
+  {title:'Our approach',description:'Understand, build, hand over.',href:siteUrl('#approach'),terms:'approach process understand build hand over scope price'},
+  {title:'About us',description:'A small team in Prince George, BC.',href:siteUrl('#about'),terms:'about ddcnorth team prince george british columbia'},
+  {title:'Contact us',description:'Tell us about your project.',href:'mailto:Fryderyk@ddcnorth.com',terms:'contact email talk conversation project ddcnorth.com'}
 ];
 let matches = [];
 function closeServices(){servicesButton.setAttribute('aria-expanded','false');servicesDropdown.hidden=true;}
@@ -76,7 +76,7 @@ function renderSearch(){
     });
     searchResults.append(list);
   }else{
-    const message=document.createElement('p');message.className='search-empty';message.textContent=isFrench ? 'Aucun résultat. Essayez « données », « sites web » ou « contact ».' : 'No matching results. Try “data”, “websites”, or “contact”.';searchResults.append(message);
+    const message=document.createElement('p');message.className='search-empty';message.textContent=isFrench ? 'Aucun résultat. Essayez « données », « cartes » ou « contact ».' : 'No matching results. Try “data”, “maps”, or “contact”.';searchResults.append(message);
   }
   searchResults.hidden=false;searchInput.setAttribute('aria-expanded','true');
   searchStatus.textContent=isFrench

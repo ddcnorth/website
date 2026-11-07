@@ -1,0 +1,33 @@
+{
+  "name": "ddcnorth-website",
+  "private": true,
+  "type": "module",
+  "description": "DDCNorth website, client portal (admin + share links) and Cloudflare Pages Functions gateway.",
+  "scripts": {
+    "build": "sh scripts/build.sh && vite build --config portal/vite.config.ts",
+    "build:static": "sh scripts/build.sh",
+    "dev:portal": "vite --config portal/vite.config.ts",
+    "dev": "npm run build && wrangler pages dev _site --port 8788",
+    "db:migrate:local": "wrangler d1 migrations apply ddcnorth-portal --local",
+    "db:migrate:remote": "wrangler d1 migrations apply ddcnorth-portal --remote",
+    "typecheck": "tsc -p functions/tsconfig.json --noEmit && tsc -p portal/tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.26.5",
+    "@clerk/react": "^6.18.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261103.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.156.2"
+  }
+}

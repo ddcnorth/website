@@ -1,0 +1,10 @@
+# Copy to .dev.vars for `npm run dev` (wrangler pages dev). Never commit .dev.vars.
+PORTAL_DEV=1
+PORTAL_DEV_ADMIN_TOKEN=change-me-local-only
+PORTAL_ROOT_DOMAIN=
+PORTAL_ORIGIN=
+CLERK_AUTHORIZED_PARTIES=http://localhost:8788,http://127.0.0.1:8788
+EMAIL_PROVIDER=log
+# Optional, to test real Clerk sign-in locally (development instance keys):
+# CLERK_SECRET_KEY=sk_test_...
+# ADMIN_EMAILS=you@ddcnorth.com

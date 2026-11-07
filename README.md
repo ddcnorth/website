@@ -6,7 +6,7 @@ Website address: <https://ddcnorth.com/>
 
 ## Preview locally
 
-No dependency installation is required. Prepare the public files and serve them:
+The marketing pages need no dependencies. Prepare the public files and serve them:
 
 ```sh
 sh scripts/build.sh
@@ -41,7 +41,7 @@ Cloudflare project settings:
 - Project: `ddcnorth-website`
 - Production branch: `main`
 - Framework preset: None
-- Build command: `sh scripts/build.sh`
+- Build command: `npm run build` (static site + client portal; was `sh scripts/build.sh`)
 - Build output directory: `_site`
 - Root directory: repository root
 - Custom domains: `ddcnorth.com` and `www.ddcnorth.com`
@@ -58,6 +58,25 @@ secondary deployment. Documentation-only changes do not trigger that workflow.
 GitHub Pages must use **GitHub Actions** as its publishing source. This repository
 is public as authorized by its owner for hosting on GitHub Free.
 
+## Client portal
+
+`/admin` (Clerk sign-in with the Microsoft 365 tenant) manages **spaces**: pages or whole apps
+built from other GitHub repos (e.g. `ahzs645/lovefutboler`) and served privately at `/p/<slug>/`
+or `<slug>.ddcnorth.com`. Each space can be shared by link, link + password, or verified email,
+with timing rules (countdown from first open, deadline, hard end, max opens, revoke). The admin
+shows who opened what, when, roughly where, and for how long. Clients use the link they were sent
+or sign in by email at `/access` ("Client access" in the footer).
+
+It runs on the same Cloudflare Pages project with Pages Functions, D1 and R2. See
+[docs/portal/README.md](docs/portal/README.md) for the architecture and
+[docs/portal/SETUP.md](docs/portal/SETUP.md) for the one-time setup. Cloudflare storage and the
+Pages build are provisioned; see [docs/portal/DEPLOYMENT.md](docs/portal/DEPLOYMENT.md) for the
+deployment state and remaining sign-in, mail, and CI credential setup.
+The GitHub Pages mirror stays static-only (no portal).
+
+Local: `npm install && cp .dev.vars.example .dev.vars && npm run db:migrate:local && npm run dev`
+(http://localhost:8788). Checks: `npm run typecheck && npm test`.
+
 ## Files
 
 - `index.html`: single-page site with hero, services, approach, about and a minimal footer.
@@ -70,7 +89,10 @@ is public as authorized by its owner for hosting on GitHub Free.
 - `404.html`: missing-page response for static hosting.
 - `licenses/`: licenses for the bundled Inter and Space Mono fonts.
 - `README.txt`: original export notes.
-- `docs/`: publication plan, status, and requirement verification.
+- `docs/`: publication plan, status, requirement verification, and `design-review.md`.
+- `functions/`, `server/`, `portal/`, `migrations/`, `wrangler.toml`: client portal (see `docs/portal/`).
+- `projects.json`, `scripts/publish-space.sh`, `.github/workflows/deploy-space.yml`: deploy other repos into portal spaces.
+- `.claude/skills/client-portal/`: working notes for Claude on the portal.
 
 Contact links open the visitor's email application. Search and navigation run
 entirely in the browser.

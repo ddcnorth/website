@@ -8,3 +8,9 @@
 .site-footer a:hover{text-decoration:underline;text-underline-offset:5px}
 .site-footer a:focus-visible{outline:2px solid var(--ice);outline-offset:5px}
 @media(max-width:700px){.footer-bar{display:grid;grid-template-columns:1fr auto;gap:12px 20px;min-height:0;padding-block:22px}.footer-brand{width:140px}.site-footer .brand-logo{width:140px}.footer-copyright{font-size:10px;text-align:right}.footer-email{font-size:12px}}
+/* Location line inherits the muted body colour (1.75:1 on navy); use the footer palette. */
+.site-footer .footer-location{color:var(--ice)}
+/* Client access sits beside Contact us; on phones the location takes its own row. */
+@media(max-width:700px){.site-footer .footer-location{grid-column:1/-1}.site-footer .footer-email:last-child{justify-self:end}}
+/* The footer logo is off-screen at load, so skip the dot entrance animation: all six dots stay solid, matching the header. */
+.site-footer .brand-logo [data-brand-symbol="six-dot"] circle{animation:none;opacity:1;transform:none}

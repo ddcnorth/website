@@ -1,0 +1,46 @@
+# Cloudflare Pages project configuration for ddcnorth.com.
+# Bindings below are used both by `wrangler pages dev` and by the deployed Pages project.
+# Secrets (CLERK_SECRET_KEY, MS_CLIENT_SECRET, ...) are NOT stored here: set them in
+# Cloudflare dashboard -> Pages -> ddcnorth-website -> Settings -> Variables and secrets
+# (or `wrangler pages secret put NAME --project-name ddcnorth-website`). Locally use .dev.vars.
+name = "ddcnorth-website"
+pages_build_output_dir = "_site"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ddcnorth-portal"
+database_id = "6f1fcf6b-c637-4318-a683-dce891ea0553"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "SITES"
+bucket_name = "ddcnorth-portal-sites"
+
+[vars]
+PORTAL_ROOT_DOMAIN = "ddcnorth.com"
+CLERK_AUTHORIZED_PARTIES = "https://ddcnorth.com,https://www.ddcnorth.com"
+ADMIN_EMAIL_DOMAINS = "ddcnorth.com"
+EMAIL_PROVIDER = "graph"
+EMAIL_FROM = "noreply@ddcnorth.com"
+EMAIL_FROM_NAME = "DDCNorth"
+
+# Preview deployments use separate data and builds. Never point these at production.
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "ddcnorth-portal-preview"
+database_id = "d6cab268-9068-49e7-954a-405ade406707"
+migrations_dir = "migrations"
+
+[[env.preview.r2_buckets]]
+binding = "SITES"
+bucket_name = "ddcnorth-portal-sites-preview"
+
+[env.preview.vars]
+PORTAL_ROOT_DOMAIN = "ddcnorth.com"
+CLERK_AUTHORIZED_PARTIES = "https://ddcnorth.com,https://www.ddcnorth.com"
+ADMIN_EMAIL_DOMAINS = "ddcnorth.com"
+EMAIL_PROVIDER = "graph"
+EMAIL_FROM = "noreply@ddcnorth.com"
+EMAIL_FROM_NAME = "DDCNorth"

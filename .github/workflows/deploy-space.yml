@@ -1,0 +1,80 @@
+name: Deploy space
+
+# Builds a repo listed in projects.json and publishes it to the portal (R2).
+# Run it from the Actions tab, or let the project repo trigger it on push with
+# a repository_dispatch event (see docs/portal/templates/notify-portal.yml).
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: Space slug from projects.json
+        required: true
+      ref:
+        description: Branch, tag or commit to build (defaults to the entry's ref)
+        required: false
+  repository_dispatch:
+    types: [deploy-space]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-space-${{ github.event.inputs.slug || github.event.client_payload.slug }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out website (registry and scripts)
+        uses: actions/checkout@v4
+
+      - name: Read registry entry
+        id: entry
+        env:
+          SLUG: ${{ github.event.inputs.slug || github.event.client_payload.slug }}
+          REF: ${{ github.event.inputs.ref || github.event.client_payload.ref }}
+        run: |
+          entry=$(jq -c --arg s "$SLUG" '.spaces[] | select(.slug == $s)' projects.json)
+          [ -n "$entry" ] || { echo "::error::No entry for slug '$SLUG' in projects.json"; exit 1; }
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          for k in repo node install build output; do
+            echo "$k=$(echo "$entry" | jq -r --arg k $k '.[$k] // empty')" >> "$GITHUB_OUTPUT"
+          done
+          echo "ref=${REF:-$(echo "$entry" | jq -r '.ref // "main"')}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out project
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.entry.outputs.repo }}
+          ref: ${{ steps.entry.outputs.ref }}
+          path: project
+          # Needed only for private project repos: a fine-grained token with Contents: read.
+          token: ${{ secrets.PROJECTS_READ_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.entry.outputs.node || '22' }}
+
+      - name: Build
+        working-directory: project
+        env:
+          # Projects should build with a relative base ('./'); this is a hint for those that read it.
+          VITE_BASE: /p/${{ steps.entry.outputs.slug }}/
+          PORTAL_SLUG: ${{ steps.entry.outputs.slug }}
+        run: |
+          ${{ steps.entry.outputs.install || 'npm ci' }}
+          ${{ steps.entry.outputs.build || 'npm run build' }}
+
+      - name: Publish to R2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || 'ddcnorth-portal-sites' }}
+          SPACE_REPO: ${{ steps.entry.outputs.repo }}
+          SPACE_REF: ${{ steps.entry.outputs.ref }}
+        run: |
+          version=$(git -C project rev-parse --short=12 HEAD)
+          sh scripts/publish-space.sh "${{ steps.entry.outputs.slug }}" "project/${{ steps.entry.outputs.output || 'dist' }}" "$version"
+          echo "Deployed ${{ steps.entry.outputs.slug }} at $version" >> "$GITHUB_STEP_SUMMARY"

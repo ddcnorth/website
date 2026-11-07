@@ -1,0 +1,25 @@
+# Copy into a project repo as .github/workflows/notify-portal.yml.
+# On every push to main it asks the DDCNorth website repo to rebuild and redeploy this
+# project into its portal space. Needs a PORTAL_DISPATCH_TOKEN secret: a fine-grained
+# token on the website repo with "Actions: read and write" and "Contents: read".
+name: Deploy to ddcnorth.com portal
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger portal deploy
+        env:
+          GH_TOKEN: ${{ secrets.PORTAL_DISPATCH_TOKEN }}
+          PORTAL_REPO: ddcnorth/website   # the website repo that holds projects.json
+          SLUG: lovefutbol                # this project's slug in projects.json
+        run: |
+          gh api "repos/$PORTAL_REPO/dispatches" \
+            -f event_type=deploy-space \
+            -f "client_payload[slug]=$SLUG" \
+            -f "client_payload[ref]=$GITHUB_SHA"

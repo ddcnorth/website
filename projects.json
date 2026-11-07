@@ -1,0 +1,14 @@
+{
+  "$comment": "Repos that deploy into the portal as spaces. Each entry is built by .github/workflows/deploy-space.yml and served at /p/<slug>/ (and <slug>.ddcnorth.com when the space has subdomain on). Create the space with the same slug in /admin before sharing it. Access rules live in the admin, not here.",
+  "spaces": [
+    {
+      "slug": "lovefutbol",
+      "repo": "ahzs645/lovefutboler",
+      "ref": "main",
+      "node": "22",
+      "install": "npm ci",
+      "build": "npm run build",
+      "output": "dist"
+    }
+  ]
+}

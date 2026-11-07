@@ -37,3 +37,7 @@ html[lang=fr] .hero h1{font-size:clamp(52px,6vw,88px)}
 
 /* Copy v1.0: several short lines per service panel; footer location line. */
 .service-body p+p{margin-top:10px}.service-body p strong{color:var(--ink);font-weight:600}.footer-location{font-size:11px}
+/* Copy v1.1: one contact call-to-action at the end of About us. */
+.about-copy .button{margin-top:30px}
+.about-copy .about-email{margin-top:16px;font-size:14px}
+.about-email a{color:var(--blue);text-decoration:underline;text-underline-offset:4px;overflow-wrap:anywhere}
