@@ -41,7 +41,7 @@ Cloudflare project settings:
 - Project: `ddcnorth-website`
 - Production branch: `main`
 - Framework preset: None
-- Build command: `npm run build` (static site + client portal; was `sh scripts/build.sh`)
+- Build command: `npm run build` (runs `sh scripts/build.sh`; static files only)
 - Build output directory: `_site`
 - Root directory: repository root
 - Custom domains: `ddcnorth.com` and `www.ddcnorth.com`
@@ -58,24 +58,17 @@ secondary deployment. Documentation-only changes do not trigger that workflow.
 GitHub Pages must use **GitHub Actions** as its publishing source. This repository
 is public as authorized by its owner for hosting on GitHub Free.
 
-## Client portal
+## Client portal (separate repo)
 
-`/admin` (the same verified accounts as Societyer DDCNorth) manages **spaces**: pages or whole apps
-built from other GitHub repos (e.g. `ahzs645/lovefutboler`) and served privately at `/p/<slug>/`
-or `<slug>.ddcnorth.com`. Each space can be shared by link, link + password, or verified email,
-with timing rules (countdown from first open, deadline, hard end, max opens, revoke). The admin
-shows who opened what, when, roughly where, and for how long. Clients use the link they were sent
-or sign in by email at `/access` ("Client access" in the footer).
+The client portal (`/admin`, `/access`, `/p/<slug>/`, `/api/*`) is **not** in this repo. It lives in
+[`ddcnorth/portal`](https://github.com/ddcnorth/portal) and runs as the Cloudflare Worker
+`ddcnorth-portal`, attached to those paths on `ddcnorth.com` and `www.ddcnorth.com`. Cloudflare
+sends requests on those paths to the Worker before this Pages project, so the two share the domain
+but are built and deployed independently.
 
-It runs on the same Cloudflare Pages project with Pages Functions, D1 and R2. See
-[docs/portal/README.md](docs/portal/README.md) for the architecture and
-[docs/portal/SETUP.md](docs/portal/SETUP.md) for the one-time setup. Cloudflare storage and the
-Pages build are provisioned; see [docs/portal/DEPLOYMENT.md](docs/portal/DEPLOYMENT.md) for the
-deployment state, account sign-in, email, and automatic project publishing.
-The GitHub Pages mirror stays static-only (no portal).
-
-Local: `npm install && cp .dev.vars.example .dev.vars && npm run db:migrate:local && npm run dev`
-(http://localhost:8788). Checks: `npm run typecheck && npm test`.
+The only link between them is the footer's "Client access" / "Accès client" link to
+`https://ddcnorth.com/access/`. Don't add website pages under `/admin`, `/access`, `/p/`, `/api/` or
+`/portal/`; the Worker owns those paths.
 
 ## Files
 
@@ -90,9 +83,7 @@ Local: `npm install && cp .dev.vars.example .dev.vars && npm run db:migrate:loca
 - `licenses/`: licenses for the bundled Inter and Space Mono fonts.
 - `README.txt`: original export notes.
 - `docs/`: publication plan, status, requirement verification, and `design-review.md`.
-- `functions/`, `server/`, `portal/`, `migrations/`, `wrangler.toml`: client portal (see `docs/portal/`).
-- `projects.json`, `scripts/publish-space.sh`, `.github/workflows/deploy-space.yml`: deploy other repos into portal spaces.
-- `.claude/skills/client-portal/`: working notes for Claude on the portal.
+- `wrangler.toml`: Pages project settings (no bindings; the portal Worker has its own).
 
 Contact links open the visitor's email application. Search and navigation run
 entirely in the browser.

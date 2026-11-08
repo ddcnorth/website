@@ -1,4 +1,4 @@
-name: Check website and portal
+name: Check website
 
 on:
   pull_request:
@@ -13,12 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npx wrangler pages functions build --outdir /tmp/portal-functions --compatibility-date 2026-10-01 --compatibility-flags nodejs_compat
+      - name: Build static site
+        run: sh scripts/build.sh
+      - name: Only website files are published
+        run: |
+          test -f _site/index.html && test -f _site/fr/index.html && test -f _site/404.html
+          ! test -e _site/_routes.json
+          ! test -e _site/functions
